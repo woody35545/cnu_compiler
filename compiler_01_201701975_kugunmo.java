@@ -8,14 +8,42 @@ import java.io.*; // file I/O 를 위한 library import
 	# 테스팅 환경의 C compiler version: gcc (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
 	# 리눅스 환경에 맞게 shell 명령어가 변환되도록 했기 때문에 window 환경에서는 변환된 .c 파일을 컴파일하여 실행했을 때 제대로 작동하지 않습니다.
 	# 예외처리가 없어도 된다고 명시해주셔서 예외처리는 따로 하지 않았습니다. 따라서 입력파일(.hf)이 문법상의 오류가 없는 상태에 대해서만 .c 파일로 변환가능합니다.
+	# 파일 경로가 src 폴더 안에있는 test.hf를 불러오도록 되어있는데 실행하는 환경에 따라 바꿔줘야 할 수도 있을 것 같습니다. (상대경로로 하고싶은데 상대경로로 했을 때 파일을 다른 디렉토리로 옮기면 가끔 오류나서 해결중입니다.)
 	# 감사합니다.
 */
 
-public class main {
-	public static void main(String[] args) throws IOException { 
+/*
+   --- (hf->c) 테스트 결과 ---
+   
+	<test.hf - original>
+	(echo "hello world")
+	(list_dir)
+	(mov list_dir "test.txt")
+	(show "test.txt")
+	(del "test.txt")
 
-		File input_file = new File("C:\\Users\\user\\eclipse-workspace\\[cnu]compiler_01\\src\\test.hf"); /*input으로 받을 파일*/
-		File output_file = new File("C:\\Users\\user\\eclipse-workspace\\[cnu]compiler_01\\src\\output.c"); /* hf파일을 받아 c파일로 변환된 output 파일*/
+	<output.c - result>
+	#include <stdio.h>
+	#include <stdlib.h>
+	int main(){
+	printf("hello world\n");
+	system("ls -al");
+	system("ls -al > \"test.txt\"");
+	system("cat \"test.txt\"");
+	system("rm \"test.txt\"");
+	}
+*/
+
+public class Compiler_201701975_구건모 {
+	public static void main(String[] args) throws IOException { 		
+		File input_file = new File(".\\src\\test.hf"); /*input으로 받을 파일*/
+		try{
+			FileReader file_reader = new FileReader(input_file); /* Input 파일을 읽기위한 FileReader 객체 file_reader 생성*/
+		}catch(Exception e){
+			System.out.println("input 파일 경로를 확인해 주세요"); /* 파일 경로 인식 못할경우 예외처리 */
+			e.printStackTrace();
+		}
+		File output_file = new File(".\\src\\output.c"); /* hf파일을 받아 c파일로 변환된 output 파일*/
 		FileReader file_reader = new FileReader(input_file); /* Input 파일을 읽기위한 FileReader 객체 file_reader 생성*/
 		FileWriter file_writer = new FileWriter(output_file, true); /* Output 파일을 쓰기위한 FileWriter 객체 file_writer 생성*/
 		file_writer.write("#include <stdio.h>\n" + "#include <stdlib.h>\n" + "int main(){\n"); /* c파일 실행을 위해 기본적으로 필요한 include와 main함수를 output 파일에 미리 write*/
@@ -36,7 +64,7 @@ public class main {
 		String token = ""; /* 하나의 토큰을 저장할 변수 */
 		String[] tokens = new String[10]; /* 토큰들을 저장할 String 배열, 본 과제의 경우 명령어가 긴 것이 없기 때문에 임의로 10만큼의 크기로 선언 */
 		int size_of_tokens = 0; /* 토큰들을 저장할 배열 tokens가 가지고 있는 원소 수 */
-
+		System.out.println("----- result -----"); /* 화면 출력용, 기능과 무관 */ 
 		while (true) {
 			c = file_reader.read(); /* 파일에서 한단어를 읽어 c에 저장, 현재는 int형. 문자로 사용시 (char)로 형변환해서 사용) */
 			if (c == EOF) { /* file_reader의 read는 end_of_file 일 때 -1값을 리턴하므로 미리 선언한 EOF 변수(값: -1) 과 비교해 같으면 더이상 읽을 내용이 없음을 의미하므로 break; */ 
@@ -62,19 +90,21 @@ public class main {
 																
 								/*--- echo -> printf 문으로 변환 --*/
 								String _echo_param = tokens[1]; /* 출력할 문자열에 대한 정보는 tokens[1]에 들어있으므로 _echo_param 변수에 넣어줌 */
-								System.out.println(
-										"line" + number_of_line + ": " + COMMAND_ECHO + " \"" + _echo_param + "\""); /* 화면 출력용 기능과 무관 */
+								//System.out.println("line" + number_of_line + ": " + COMMAND_ECHO + " \"" + _echo_param + "\""); /* 화면 출력용 기능과 무관 */
 								String content = "printf(\"" + _echo_param + "\\n\");"; /* c에서의 출력문은 printf이므로 출력할 문자열인 _echo_param을 넣어서 printf 작성 Quotation mark는 Escape Character를 이용하여 입력하도록 함.*/
 								file_writer.write(content + "\n"); /* 파일에 입력할 내용인 content를 output 파일에 작성하고 newline 파일에 작성 */
+								System.out.println("line" + number_of_line + ": " + content); /* 화면 출력용 기능과 무관 */
 								file_writer.flush(); /* 내용이 버퍼에만 남고 파일에 작성되지 않는 문제를 막기위해서 flush method 호출 */
 
 							}
 
 							else if (command.equals(COMMAND_LISTDIR)) { // command가  list_dir 일 때, 리눅스의 경우 ls, 윈도우의 경우 dir
 								/*-- list_dir -> system("ls -al") 로 변환 --*/
-								System.out.println("line" + number_of_line + ": " + COMMAND_LISTDIR); /* 화면 출력용 기능과 무관 */
+								//System.out.println("line" + number_of_line + ": " + COMMAND_LISTDIR); /* 화면 출력용 기능과 무관 */
 								String content = "system(\"ls -al\");"; // 파일 입력으로 들어갈 내용
 								file_writer.write(content + "\n"); /* 파일에 입력할 내용인 content를 output 파일에 작성하고 newline 파일에 작성 */
+								System.out.println("line" + number_of_line + ": " + content); /* 화면 출력용 기능과 무관 */
+
 								file_writer.flush();/* 내용이 버퍼에만 남고 파일에 작성되지 않는 문제를 막기위해서 flush method 호출 */
 
 							}
@@ -82,17 +112,19 @@ public class main {
 							else if (command.equals(COMMAND_DEL)) { /* command가 del 일 때 , 리눅스의 경우 rm, 윈도우의 경우 del
 								/*-- del "*filename" -> system("rm \"filename\"") 으로 변환 --*/
 								String _del_param = tokens[1]; /* 삭제할 파일이름이 token[1]에 저장되어 있으므로 _del_param에 넣어줌 */ 
-								System.out.println("line" + number_of_line + ": " + COMMAND_DEL + " \"" + _del_param + "\"");/* 화면 출력용 기능과 무관 */
+								//System.out.println("line" + number_of_line + ": " + COMMAND_DEL + " \"" + _del_param + "\"");/* 화면 출력용 기능과 무관 */
 								String content = "system(\"rm \\\"" + _del_param + "\\\"\");"; /*system("rm \"filename\"") 으로 변환해야 하므로 escape_characeter를 이용하여 '\'와 Quotation_mark가 파일입력시 반영되도록 함.*/
 								file_writer.write(content + "\n");/* 파일에 입력할 내용인 content를 output 파일에 작성하고 newline 파일에 작성 */
+								System.out.println("line" + number_of_line + ": " + content); /* 화면 출력용 기능과 무관 */
 								file_writer.flush();/* 내용이 버퍼에만 남고 파일에 작성되지 않는 문제를 막기위해서 flush method 호출 */
 
 							} else if (command.equals(COMMAND_SHOW)) { // command가 show일 때. 리눅스의 경우 cat, 윈도우의 경우 type
 								/*-- show "*filename" -> system("cat \"filename\"") 으로 변환 --*/
 								String _show_param = tokens[1]; /* 출력할 파일명을 tokens[1]이 담고 있으므로 _show_param에 넣어줌 */
-								System.out.println("line" + number_of_line + ": " + COMMAND_SHOW + " \"" + _show_param + "\"");/* 화면 출력용 기능과 무관 */
+								//System.out.println("line" + number_of_line + ": " + COMMAND_SHOW + " \"" + _show_param + "\"");/* 화면 출력용 기능과 무관 */
 								String content = "system(\"cat \\\"" + _show_param + "\\\"\");";  /* system("cat \"filename\"") 으로 변환해야 하므로 escape_characeter를 이용하여 '\'와 Quotation_mark가 파일입력시 반영되도록 함.*/
 								file_writer.write(content + "\n");/* 파일에 입력할 내용인 content를 output 파일에 작성하고 newline 파일에 작성 */
+								System.out.println("line" + number_of_line + ": " + content); /* 화면 출력용 기능과 무관 */
 								file_writer.flush();/* 내용이 버퍼에만 남고 파일에 작성되지 않는 문제를 막기위해서 flush method 호출 */
 
 							}
@@ -100,9 +132,10 @@ public class main {
 							else if (command.equals(COMMAND_MOV)) { /* command가 mov 일 때, 리눅스의 경우 '>'를 통해 redirection 수행 */
 								/*-- mov list_dir "*filename" -> system("ls-al > \"filename\"") 으로 변환 --*/
 								String _mov_param = tokens[2]; /* 출력 결과를 저장할 파일명을 token[2]가 가지고 있으므로 _mov_param에 넣어줌 */
-								System.out.println("line" + number_of_line + ": " + COMMAND_MOV + " " + tokens[1] + " \"" + _mov_param + "\"");/* 화면 출력용 기능과 무관 */
+							//	System.out.println("line" + number_of_line + ": " + COMMAND_MOV + " " + tokens[1] + " \"" + _mov_param + "\"");/* 화면 출력용 기능과 무관 */
 								String content = "system(\"ls -al > \\\"" + _mov_param + "\\\"\");"; /* system("ls-al > \"filename\"") 으로 변환해야 하므로 escape_characeter를 이용하여 '\'와 Quotation_mark가 파일입력시 반영되도록 함.*/
 								file_writer.write(content + "\n");/* 파일에 입력할 내용인 content를 output 파일에 작성하고 newline 파일에 작성 */
+								System.out.println("line" + number_of_line + ": " + content); /* 화면 출력용 기능과 무관 */
 								file_writer.flush();/* 내용이 버퍼에만 남고 파일에 작성되지 않는 문제를 막기위해서 flush method 호출 */
 							}
 							/*--- 한줄에 대한 (hf->c) 변환 완료---*/
@@ -150,5 +183,12 @@ public class main {
 		file_writer.write("}"); /* 모든 코드가 변환이 끝나서 작성된 상태이므로 c의 메인문을 '}' 입력하여 닫아줌 */
 		file_writer.flush();/* 내용이 버퍼에만 남고 파일에 작성되지 않는 문제를 막기위해서 flush method 호출 */
 		System.out.println("(.hf) -> (.c) 변환이 완료되었습니다. 생성된 c 파일을 확인해 보세요!"); /* 변환 완료 메시지 출력 */
+	
+		file_reader.close(); /*file_reader close*/	
+		file_writer.close();/*file_writer close*/
+		
+	
+		
 	}
+	
 }
