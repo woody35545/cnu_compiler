@@ -3,7 +3,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 public class TestMiniC {
 
-	public static void main(String[] args) throws Exception{
+	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
 
 		MiniCLexer lexer = new MiniCLexer(new ANTLRFileStream("test.c"));

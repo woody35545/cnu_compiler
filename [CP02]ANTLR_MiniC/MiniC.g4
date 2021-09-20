@@ -59,7 +59,7 @@ args	: expr (',' expr)*
 	|					 ;
 
 VOID: 'void';
-INT: 'int';
+INT: 'int' ;
 
 WHILE: 'while';
 IF: 'if';
@@ -72,10 +72,11 @@ GE: '>=';
 EQ: '==';
 NE: '!=';
 
-IDENT  : [a-zA-Z_] {System.out.println("201701975 Rule 99-1");}
-        (   [a-zA-Z_] {System.out.println("201701975 Rule 99-2");}
-        |  [0-9]{System.out.println("201701975 Rule 99-3");}
-        )*{System.out.println("201701975 Rule 99-4");};
+IDENT  : [a-zA-Z_] 
+        (   [a-zA-Z_]
+        |  [0-9] 
+        )* 
+        ;
 
 
 LITERAL:   DecimalConstant     |   OctalConstant     |   HexadecimalConstant     ;
